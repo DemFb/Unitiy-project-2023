@@ -10,14 +10,12 @@ public class BossHealth : MonoBehaviour
     void Awake()
     {
         currentHealth = maxhealth;
-        print("Current health: " + currentHealth);
 
     }
 
     public void TakeDamage(int amount)
     {
         currentHealth -= amount;
-        print("health left: " + currentHealth);
         if(currentHealth <= 0)
         {
             Death();
