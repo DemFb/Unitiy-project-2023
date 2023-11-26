@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Weapons : MonoBehaviour
 {
-    public int SwordDamage = 3;
+    public int damage = 3;
     public Animator animator;
 
 
@@ -18,10 +18,18 @@ public class Weapons : MonoBehaviour
 
         print("BEFORE: " + playerController.animator.GetBool("Attack"));
 
-        if (playerController.animator.GetBool("Attack") == true && collider.CompareTag("Enemy"))
+        if (playerController.animator.GetBool("Attack") == true)
             print("AFTER: " + playerController.animator.GetBool("Attack"));
         {
-            collider.GetComponent<EnemyHealth>().TakeDamage(SwordDamage);
+            if(collider.CompareTag("Enemy"))
+            {
+                collider.GetComponent<EnemyHealth>().TakeDamage(damage);
+            }
+            if(collider.CompareTag("Boss"))
+            {
+                collider.GetComponent<BossHealth>().TakeDamage(damage);
+            }
+            
         }
 
     }

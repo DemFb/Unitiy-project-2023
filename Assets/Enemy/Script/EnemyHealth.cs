@@ -38,8 +38,11 @@ public class EnemyHealth : MonoBehaviour
     public int maxHealth;
     public int currentHealth;
 
-    public delegate void DeathAction(int remainingEnemies);
-    public event DeathAction OnDeath;
+    public delegate void DeathCount(int remainingEnemies);
+    public event DeathCount OnDeathCount;
+
+    public delegate void DeathType(SpawnEnemies.EnemyType enemyType);
+    public event DeathType OnDeathType;
 
     void Awake()
     {
@@ -61,15 +64,31 @@ public class EnemyHealth : MonoBehaviour
     {
         Destroy(gameObject);
 
-        if (OnDeath != null)
+        if (OnDeathCount != null)
         {
-            OnDeath.Invoke(GetRemainingEnemies());
+            OnDeathCount.Invoke(GetRemainingEnemies());
+        }
+
+        if (OnDeathType != null)
+        {
+            OnDeathType.Invoke(GetEnemyType());
         }
     }
 
     int GetRemainingEnemies()
     {
-        // Vous pouvez ajuster cette logique pour compter les ennemis restants dans votre liste ou votre gestionnaire
         return GameObject.FindGameObjectsWithTag("Enemy").Length;
+    }
+
+    SpawnEnemies.EnemyType GetEnemyType()
+    {
+        if (gameObject.CompareTag("Boss"))
+        {
+            return SpawnEnemies.EnemyType.Boss;
+        }
+        else
+        {
+            return SpawnEnemies.EnemyType.Enemy;
+        }
     }
 }

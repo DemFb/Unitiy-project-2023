@@ -1,39 +1,7 @@
-
 //using System.Collections;
 //using System.Collections.Generic;
-//using UnityEngine;
-//using UnityEngine.AI;
-
-//public class SpawnEnemies : MonoBehaviour
-//{
-//    public GameObject enemyPrefab;
-//    public int xPos;
-//    public int zPos;
-//    public int enemyCount;
-
-//    // Start is called before the first frame update
-//    void Start()
-//    {
-//        StartCoroutine(EnemyDrop());
-//    }
-
-//    // Random enemy drop in a range 10 to 140
-//    IEnumerator EnemyDrop()
-//    {
-//        while (enemyCount < 10)
-//        {
-//            xPos = Random.Range(10, 140);
-//            zPos = Random.Range(10, 140);
-//            Instantiate(enemyPrefab, new Vector3(xPos, 3, zPos), Quaternion.identity);
-//            yield return new WaitForSeconds(0.1f);
-//            enemyCount += 1;
-//        }
-//    }
-//}
-
-
-//using System.Collections;
-//using System.Collections.Generic;
+//using System.Linq;
+//using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
 //using UnityEngine;
 //using UnityEngine.UI;
 
@@ -42,14 +10,23 @@
 //    public List<GameObject> enemyPrefabs;
 //    public GameObject bossPrefab;
 //    public int startingEnemyCount = 5;
-//    public float timeBetweenWaves = 10f;
-//    public float waveCooldown = 5f;
+//    public float timeBetweenWaves = 5f;
 //    public int bossWaveInterval = 5;
 
 //    private int currentWave = 1;
 
 //    public Text warningText;
 //    public Text bossArrivedText;
+//    public Text remainingEnemiesText;
+//    public Text waveWarningText;
+
+//    public enum EnemyType
+//    {
+//        Enemy,
+//        Boss,
+//    }
+
+//    private List<GameObject> spawnedEnemies = new List<GameObject>();
 
 //    // Start is called before the first frame update
 //    void Start()
@@ -61,18 +38,45 @@
 //    {
 //        while (true)
 //        {
-//            yield return new WaitForSeconds(timeBetweenWaves);
+//            float timeRemaining = timeBetweenWaves; // Initialiser le temps restant avec le temps entre les vagues
+
+//            while (timeRemaining > 0)
+//            {
+//                waveWarningText.text = "Prochaine vague dans " + Mathf.CeilToInt(timeRemaining) + " secondes"; // Utiliser Mathf.CeilToInt pour arrondir à l'entier supérieur
+//                yield return new WaitForSeconds(1f);
+//                timeRemaining -= 1f;
+//            }
+
+//            waveWarningText.text = "";
 
 //            int enemyCount = startingEnemyCount + currentWave * 2;
+//            UpdateRemainingEnemiesText(enemyCount);
 
 //            for (int i = 0; i < enemyCount; i++)
 //            {
-//                SpawnEnemy();
-//                yield return new WaitForSeconds(1f);
+//                GameObject enemyPrefab = GetRandomEnemyPrefab();
+//                GameObject enemy = Instantiate(enemyPrefab, GetRandomSpawnPosition(), Quaternion.identity);
+//                spawnedEnemies.Add(enemy);
+
+//                EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
+//                if (enemyHealth != null)
+//                {
+//                    enemyHealth.OnDeath += HandleEnemyDeath;
+//                }
+
+//                yield return new WaitForSeconds(0.3f);
 //            }
 
-//            yield return new WaitForSeconds(waveCooldown);
+
+//            while (AreEnemiesAlive())
+//            {
+//                yield return null; // Attendez que tous les ennemis soient morts
+//            }
 //            currentWave++;
+
+//            SpawnEnemy();
+
+
 
 //            if (currentWave % bossWaveInterval == 0)
 //            {
@@ -81,36 +85,101 @@
 //        }
 //    }
 
-//    void SpawnEnemy()
+//    void HandleEnemyDeath(int remainingEnemies)
+//    {
+//        // Mettre à jour la liste spawnedEnemies après la mort de l'ennemi
+//        spawnedEnemies.RemoveAll(enemy => enemy == null || !enemy.activeSelf);
+//        UpdateRemainingEnemiesText(remainingEnemies);
+
+//        if (enemyType == EnemyType.Normal)
+//        {
+//            GameManager.instance.UpdateScore(5);
+//        }
+//        else if (enemyType == EnemyType.Boss)
+//        {
+//            GameManager.instance.UpdateScore(15);
+//        }
+
+//    }
+
+//    EnemyType GetEnemyType(GameObject enemy)
+//    {
+//        if (enemy.CompareTag("Boss"))
+//        {
+//            return EnemyType.Boss;
+//        }
+//        // Ajoutez d'autres conditions pour différents types d'ennemis si nécessaire
+//        else
+//        {
+//            // Retournez le type par défaut ou traitez le cas où le tag n'est pas reconnu
+//            return EnemyType.Enemy;
+//        }
+//    }
+
+//    bool AreEnemiesAlive()
+//    {
+//        return spawnedEnemies.Any(enemy => enemy != null && enemy.activeSelf);
+//    }
+
+//    void UpdateRemainingEnemiesText(int remainingEnemies)
+//    {
+//        remainingEnemiesText.text = "Enemies restants: " + remainingEnemies;
+//    }
+
+//    GameObject GetRandomEnemyPrefab()
 //    {
 //        int randomEnemyIndex = Random.Range(0, enemyPrefabs.Count);
-//        GameObject enemyPrefab = enemyPrefabs[randomEnemyIndex];
+//        return enemyPrefabs[randomEnemyIndex];
+//    }
 
+//    Vector3 GetRandomSpawnPosition()
+//    {
 //        float xPos = Random.Range(10, 140);
 //        float zPos = Random.Range(10, 140);
-//        Instantiate(enemyPrefab, new Vector3(xPos, 3, zPos), Quaternion.identity);
+//        return new Vector3(xPos, 3, zPos);
+//    }
+
+//    void SpawnEnemy()
+//    {
+//        GameObject enemyPrefab = GetRandomEnemyPrefab();
+//        GameObject enemy = Instantiate(enemyPrefab, GetRandomSpawnPosition(), Quaternion.identity);
+//        spawnedEnemies.Add(enemy);
+
+//        EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
+//        if (enemyHealth != null)
+//        {
+//            enemyHealth.OnDeath += HandleEnemyDeath;
+//        }
 //    }
 
 //    IEnumerator SpawnBoss()
 //    {
-//        warningText.text = "Warning: Boss en approche!";
+//        warningText.text = "ATTENTION: Un boss approche!";
 //        yield return new WaitForSeconds(2f);
 //        warningText.text = "";
 
-//        float xPos = Random.Range(10, 140);
-//        float zPos = Random.Range(10, 140);
-//        Instantiate(bossPrefab, new Vector3(xPos, 3, zPos), Quaternion.identity);
+//        GameObject boss = Instantiate(bossPrefab, GetRandomSpawnPosition(), Quaternion.identity);
+//        spawnedEnemies.Add(boss);
 
-//        bossArrivedText.text = "Boss has arrived!";
+//        BossHealth bossHealth = boss.GetComponent<BossHealth>();
+//        if (bossHealth != null)
+//        {
+//            bossHealth.OnDeath += HandleEnemyDeath;
+//        }
+
+//        bossArrivedText.text = "Un boss est apparu!";
 //        yield return new WaitForSeconds(3f);
 //        bossArrivedText.text = "";
 //    }
 //}
 
 
+
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -128,6 +197,12 @@ public class SpawnEnemies : MonoBehaviour
     public Text bossArrivedText;
     public Text remainingEnemiesText;
     public Text waveWarningText;
+
+    public enum EnemyType
+    {
+        Enemy,
+        Boss,
+    }
 
     private List<GameObject> spawnedEnemies = new List<GameObject>();
 
@@ -152,7 +227,7 @@ public class SpawnEnemies : MonoBehaviour
 
             waveWarningText.text = "";
 
-                        int enemyCount = startingEnemyCount + currentWave * 2;
+            int enemyCount = startingEnemyCount + currentWave * 2;
             UpdateRemainingEnemiesText(enemyCount);
 
             for (int i = 0; i < enemyCount; i++)
@@ -164,22 +239,20 @@ public class SpawnEnemies : MonoBehaviour
                 EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
                 if (enemyHealth != null)
                 {
-                    enemyHealth.OnDeath += HandleEnemyDeath;
+                    enemyHealth.OnDeathCount += UpdateRemainingEnemiesText;
+                    enemyHealth.OnDeathType += HandleEnemyDeathType;
                 }
 
                 yield return new WaitForSeconds(0.3f);
             }
 
-
             while (AreEnemiesAlive())
             {
                 yield return null; // Attendez que tous les ennemis soient morts
             }
-               currentWave++;
 
+            currentWave++;
             SpawnEnemy();
-
-
 
             if (currentWave % bossWaveInterval == 0)
             {
@@ -188,11 +261,30 @@ public class SpawnEnemies : MonoBehaviour
         }
     }
 
-    void HandleEnemyDeath(int remainingEnemies)
+    void HandleEnemyDeathType(EnemyType enemyType)
     {
-        // Mettre à jour la liste spawnedEnemies après la mort de l'ennemi
-        spawnedEnemies.RemoveAll(enemy => enemy == null || !enemy.activeSelf);
-        UpdateRemainingEnemiesText(remainingEnemies);
+        if (enemyType == EnemyType.Enemy)
+        {
+            GameManager.instance.UpdateScore(5);
+        }
+        else if (enemyType == EnemyType.Boss)
+        {
+            GameManager.instance.UpdateScore(15);
+        }
+    }
+
+    EnemyType GetEnemyType(GameObject enemy)
+    {
+        if (enemy.CompareTag("Boss"))
+        {
+            return EnemyType.Boss;
+        }
+        // Ajoutez d'autres conditions pour différents types d'ennemis si nécessaire
+        else
+        {
+            // Retournez le type par défaut ou traitez le cas où le tag n'est pas reconnu
+            return EnemyType.Enemy;
+        }
     }
 
     bool AreEnemiesAlive()
@@ -227,7 +319,8 @@ public class SpawnEnemies : MonoBehaviour
         EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
         if (enemyHealth != null)
         {
-            enemyHealth.OnDeath += HandleEnemyDeath;
+            enemyHealth.OnDeathCount += UpdateRemainingEnemiesText;
+            enemyHealth.OnDeathType += HandleEnemyDeathType;
         }
     }
 
@@ -243,7 +336,7 @@ public class SpawnEnemies : MonoBehaviour
         BossHealth bossHealth = boss.GetComponent<BossHealth>();
         if (bossHealth != null)
         {
-            bossHealth.OnDeath += HandleEnemyDeath;
+            bossHealth.OnDeathCount += UpdateRemainingEnemiesText;
         }
 
         bossArrivedText.text = "Un boss est apparu!";
@@ -251,4 +344,3 @@ public class SpawnEnemies : MonoBehaviour
         bossArrivedText.text = "";
     }
 }
-
