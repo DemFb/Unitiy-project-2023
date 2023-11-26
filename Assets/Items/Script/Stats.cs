@@ -22,8 +22,8 @@ public class Stats : MonoBehaviour
         currentHealth = health;
         targetHealth = health;
 
-        healthUI.Start3DSlider(health);
-        healthUI.Update2DSlider(health, currentHealth);
+//        healthUI.Start3DSlider(health);
+  //      healthUI.Update2DSlider(health, currentHealth);
     }
     //test
     private void Update()
